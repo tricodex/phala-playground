@@ -26,7 +26,7 @@ Creating, submitting, and verifying content using a Phala Network AI agent. It i
             * Saves the submitted content to a JSON file in the `data/contents` directory, linked to the corresponding request ID.
         * `handleVerifyContent`:
             * Reads the requirements and content from their respective JSON files.
-            * Constructs a GET request to the Phala AI agent, including the requirements, content, secret key, and OpenAI API key as query parameters.
+            * Constructs a GET request to the Phala AI agent, including the requirements, content and secret key as query parameters.
             * Fetches the response from the Phala agent.
             * Parses the response and saves the verification result (likely containing `isValid` and `reason`) to a JSON file in the `data/verifications` directory.
             * Returns the verification result to the frontend.

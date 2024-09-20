@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Phala-agent-playground
 
-## Getting Started
+**Overview**
 
-First, run the development server:
+Creating, submitting, and verifying content using a Phala Network AI agent. It involves both frontend (Next.js) and backend (API routes) components working in conjunction.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Frontend (Next.js)**
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+* **`Home` Component:**
+    * Manages the user interface and interaction flow.
+    * Utilizes state variables to track the current step, requirements, content, request ID, and verification result.
+    * Provides input fields for requirements and content.
+    * Includes buttons to trigger actions: "Create Request," "Submit Content," and "Verify Content."
+    * Displays the verification result in an alert and a formatted JSON block.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Backend (API Routes)**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* **`/api/phala-ai-agent/route.ts`:**
+    * Handles POST requests from the frontend.
+    * Parses the request body to determine the `action` and associated `data`.
+    * Implements three main handlers:
+        * `handleCreateRequest`:
+            * Generates a unique request ID.
+            * Saves the requirements and a "pending" status to a JSON file in the `data/requests` directory.
+        * `handleSubmitContent`:
+            * Saves the submitted content to a JSON file in the `data/contents` directory, linked to the corresponding request ID.
+        * `handleVerifyContent`:
+            * Reads the requirements and content from their respective JSON files.
+            * Constructs a GET request to the Phala AI agent, including the requirements, content, secret key, and OpenAI API key as query parameters.
+            * Fetches the response from the Phala agent.
+            * Parses the response and saves the verification result (likely containing `isValid` and `reason`) to a JSON file in the `data/verifications` directory.
+            * Returns the verification result to the frontend.
 
-## Learn More
+**Interaction Flow**
 
-To learn more about Next.js, take a look at the following resources:
+1. **User enters requirements and clicks "Create Request."**
+   * The frontend sends a POST request to the backend API route.
+   * The `handleCreateRequest` handler generates a request ID, saves the requirements, and returns the ID to the frontend.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **User enters content and clicks "Submit Content."**
+   * The frontend sends another POST request to the backend.
+   * The `handleSubmitContent` handler saves the content associated with the request ID.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **User clicks "Verify Content."**
+   * The frontend sends a final POST request.
+   * The `handleVerifyContent` handler:
+     * Fetches the requirements and content.
+     * Makes a GET request to the Phala AI agent with the necessary data.
+     * Receives the verification result from the agent.
+     * Saves the result and sends it back to the frontend.
 
-## Deploy on Vercel
+4. **Frontend displays the verification result.**
+   * The `Home` component shows whether the content is valid and the reason provided by the AI agent.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Key Points**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* **Phala AI Agent:** The core verification logic resides within the Phala AI agent, which you've deployed separately. Its content hash (`AGENT_CID`) is used to access it.
+* **Data Storage:** The system uses JSON files to store requests, content, and verification results locally.
+* **API Interaction:** The frontend interacts with the backend via API routes, and the backend communicates with the Phala AI agent through GET requests.
+* **Verification:** The AI agent performs the actual content verification based on the provided requirements and content, returning a result indicating validity and a reason. 

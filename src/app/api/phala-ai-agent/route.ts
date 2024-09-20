@@ -62,55 +62,53 @@ async function handleSubmitContent(data: any) {
   }
 }
 
-// Handler to verify the content by making a GET request to the Phala API
 async function handleVerifyContent(data: any) {
-  try {
-    console.log('Verifying content with data:', JSON.stringify(data, null, 2));
-    const { requestId } = data;
-    const request = await readJSON('requests', requestId);
-    const content = await readJSON('contents', requestId);
-
-    // Prepare query parameters for the GET request
-    const queryParams = new URLSearchParams({
-      requirements: request.requirements || '',
-      content: content.content || '',
-      key: SECRET_KEY,
-      openaiApiKey: process.env.OPENAI_API_KEY || '',
-    });
-
-    // Sending the GET request to the Phala API
-    const phalaResponse = await fetch(`${PHALA_GATEWAY_URL}/ipfs/${AGENT_CID}?${queryParams.toString()}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-    console.log('Phala API response status:', phalaResponse.status);
-    console.log('Phala API response headers:', Object.fromEntries(phalaResponse.headers.entries()));
-
-    if (!phalaResponse.ok) {
-      const errorText = await phalaResponse.text();
-      console.error('Phala API error:', phalaResponse.status, errorText);
-      throw new Error(`Phala API error: ${phalaResponse.status} ${phalaResponse.statusText}`);
-    }
-
-    // Parsing and saving the verification result
-    const responseText = await phalaResponse.text();
-    let verificationResult;
     try {
-      verificationResult = JSON.parse(responseText);
+      console.log('Verifying content with data:', JSON.stringify(data, null, 2));
+      const { requestId } = data;
+      const request = await readJSON('requests', requestId);
+      const content = await readJSON('contents', requestId);
+  
+      // Prepare query parameters for the GET request
+      const queryParams = new URLSearchParams({
+        requirements: request.requirements || '',
+        content: content.content || '',
+        key: SECRET_KEY, // This is the key to access the stored secrets
+      });
+  
+      // Sending the GET request to the Phala API
+      const phalaResponse = await fetch(`${PHALA_GATEWAY_URL}/ipfs/${AGENT_CID}?${queryParams.toString()}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+  
+      console.log('Phala API response status:', phalaResponse.status);
+      console.log('Phala API response headers:', Object.fromEntries(phalaResponse.headers.entries()));
+  
+      if (!phalaResponse.ok) {
+        const errorText = await phalaResponse.text();
+        console.error('Phala API error:', phalaResponse.status, errorText);
+        throw new Error(`Phala API error: ${phalaResponse.status} ${phalaResponse.statusText}`);
+      }
+  
+      // Parsing and saving the verification result
+      const responseText = await phalaResponse.text();
+      let verificationResult;
+      try {
+        verificationResult = JSON.parse(responseText);
+      } catch (error) {
+        console.error('Error parsing Phala API response:', error);
+        throw new Error('Invalid JSON response from Phala API');
+      }
+  
+      await saveJSON('verifications', requestId, verificationResult);
+      console.log('Verification result saved for request ID:', requestId);
+      return NextResponse.json(verificationResult);
     } catch (error) {
-      console.error('Error parsing Phala API response:', error);
-      throw new Error('Invalid JSON response from Phala API');
+      console.error('Error in handleVerifyContent:', error);
+      return NextResponse.json({ error: 'Failed to verify content' }, { status: 500 });
     }
-
-    await saveJSON('verifications', requestId, verificationResult);
-    console.log('Verification result saved for request ID:', requestId);
-    return NextResponse.json(verificationResult);
-  } catch (error) {
-    console.error('Error in handleVerifyContent:', error);
-    return NextResponse.json({ error: 'Failed to verify content' }, { status: 500 });
   }
-}
 
 // Function to save data as a JSON file
 async function saveJSON(type: string, id: string, data: any) {

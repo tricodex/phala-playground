@@ -6,9 +6,8 @@ import path from 'path';
 
 const PHALA_GATEWAY_URL = 'https://wapo-testnet.phala.network';
 const AGENT_CID = 'QmbbGCwhQuij7e2mxC8DNKNEvxuJYz9u5r8DkSug6C1Lgj';
-const SECRET_KEY = process.env.PHALA_SECRET_KEY || ''; // Ensure SECRET_KEY is not undefined
+const SECRET_KEY = process.env.PHALA_SECRET_KEY;
 
-// Main POST request handler
 export async function POST(request: Request) {
   try {
     console.log('Received POST request');
@@ -33,7 +32,6 @@ export async function POST(request: Request) {
   }
 }
 
-// Handler to create a request and save it to file
 async function handleCreateRequest(data: any) {
   try {
     console.log('Creating request with data:', JSON.stringify(data, null, 2));
@@ -48,7 +46,6 @@ async function handleCreateRequest(data: any) {
   }
 }
 
-// Handler to submit content and save it to file
 async function handleSubmitContent(data: any) {
   try {
     console.log('Submitting content with data:', JSON.stringify(data, null, 2));
@@ -62,28 +59,29 @@ async function handleSubmitContent(data: any) {
   }
 }
 
-// Handler to verify the content by making a GET request to the Phala API
 async function handleVerifyContent(data: any) {
   try {
     console.log('Verifying content with data:', JSON.stringify(data, null, 2));
     const { requestId } = data;
     const request = await readJSON('requests', requestId);
     const content = await readJSON('contents', requestId);
-
-    // Prepare query parameters for the GET request
-    const queryParams = new URLSearchParams({
-      requirements: request.requirements || '',
-      content: content.content || '',
-      key: SECRET_KEY,
-      openaiApiKey: process.env.OPENAI_API_KEY || '',
-    });
-
-    // Sending the GET request to the Phala API
-    const phalaResponse = await fetch(`${PHALA_GATEWAY_URL}/ipfs/${AGENT_CID}?${queryParams.toString()}`, {
+    
+    console.log('Sending request to Phala API');
+    const phalaResponse = await fetch(`${PHALA_GATEWAY_URL}/ipfs/${AGENT_CID}?key=${SECRET_KEY}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'GET',
+        path: '/ipfs/CID',
+        queries: {
+          requirements: [request.requirements],
+          content: [content.content],
+        },
+        secret: { openaiApiKey: process.env.OPENAI_API_KEY },
+        headers: {},
+      }),
     });
-
+    
     console.log('Phala API response status:', phalaResponse.status);
     console.log('Phala API response headers:', Object.fromEntries(phalaResponse.headers.entries()));
 
@@ -93,8 +91,9 @@ async function handleVerifyContent(data: any) {
       throw new Error(`Phala API error: ${phalaResponse.status} ${phalaResponse.statusText}`);
     }
 
-    // Parsing and saving the verification result
     const responseText = await phalaResponse.text();
+    console.log('Phala API response body:', responseText);
+
     let verificationResult;
     try {
       verificationResult = JSON.parse(responseText);
@@ -112,7 +111,6 @@ async function handleVerifyContent(data: any) {
   }
 }
 
-// Function to save data as a JSON file
 async function saveJSON(type: string, id: string, data: any) {
   try {
     const dir = path.join(process.cwd(), 'data', type);
@@ -125,7 +123,6 @@ async function saveJSON(type: string, id: string, data: any) {
   }
 }
 
-// Function to read data from a JSON file
 async function readJSON(type: string, id: string) {
   try {
     const filePath = path.join(process.cwd(), 'data', type, `${id}.json`);

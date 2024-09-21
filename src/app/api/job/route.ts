@@ -1,26 +1,6 @@
-// src/app/api/job/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
 import { Job } from '@/types';
-
-const DATA_DIR = path.join(process.cwd(), 'data');
-const JOBS_FILE = path.join(DATA_DIR, 'jobs.json');
-
-async function getJobs(): Promise<Job[]> {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    const data = await fs.readFile(JOBS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    return ['error', 'ENOENT'].includes((error as string)) ? [] : Promise.reject(error);
-  }
-}
-
-async function saveJobs(jobs: Job[]): Promise<void> {
-  await fs.writeFile(JOBS_FILE, JSON.stringify(jobs, null, 2));
-}
+import { getJobs, saveJobs } from '@/lib/job-utils';
 
 export async function GET(): Promise<NextResponse<Job[]>> {
   const jobs = await getJobs();
@@ -51,6 +31,3 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
   }
   return NextResponse.json({ error: 'Job not found' }, { status: 404 });
 }
-
-export { getJobs, saveJobs };
-

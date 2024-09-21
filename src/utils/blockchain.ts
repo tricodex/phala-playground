@@ -62,19 +62,24 @@ export const readJobCounter = async () => {
 };
 
 export const createJob = async (provider: any, description: string, value: bigint) => {
-  const walletClient = getWalletClient(provider);
-  const [address] = await walletClient.getAddresses();
+  try {
+    const walletClient = getWalletClient(provider);
+    const [address] = await walletClient.getAddresses();
 
-  const { request } = await publicClient.simulateContract({
-    address: contractAddress,
-    abi: contractAbi,
-    functionName: 'createJob',
-    args: [description, value],
-    account: address,
-    value: value,
-  });
+    const { request } = await publicClient.simulateContract({
+      address: contractAddress,
+      abi: contractAbi,
+      functionName: 'createJob',
+      args: [description, value],
+      account: address,
+      value: value,
+    });
 
-  return walletClient.writeContract(request);
+    return walletClient.writeContract(request);
+  } catch (error) {
+    console.error('Error creating job:', error);
+    throw error;
+  }
 };
 
 export const submitWork = async (provider: any, jobId: bigint, submissionCID: string) => {
@@ -121,3 +126,10 @@ export const getJobDetails = async (jobId: bigint) => {
     throw error;
   }
 };
+
+export async function fetchXdaiPrice(): Promise<number> {
+  // Hardcoded xDAI price based 22/9/24 huehueu
+  const hardcodedXdaiPrice = 1.01;
+
+  return hardcodedXdaiPrice;
+}

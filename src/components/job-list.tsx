@@ -1,24 +1,24 @@
+// src/components/job-list.tsx
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Job } from "@/types";
 
-
 interface JobListProps {
   jobs: Job[];
-  selectedJob: string;
-  onJobSelect: (jobId: string) => void;
+  selectedJob: Job | null;
+  onJobSelect: (job: Job) => void;
 }
 
 export function JobList({ jobs, selectedJob, onJobSelect }: JobListProps) {
   return (
     <Card className="mb-4">
       <CardHeader>
-        <CardTitle>Your Requests</CardTitle>
+        <CardTitle>Job List</CardTitle>
         <CardDescription>View and manage your service requests.</CardDescription>
       </CardHeader>
       <CardContent>
-        <Select onValueChange={onJobSelect} value={selectedJob}>
+        <Select onValueChange={(value) => onJobSelect(jobs.find(job => job.id === value) as Job)} value={selectedJob?.id}>
           <SelectTrigger>
             <SelectValue placeholder="Select a job" />
           </SelectTrigger>
@@ -33,9 +33,19 @@ export function JobList({ jobs, selectedJob, onJobSelect }: JobListProps) {
         {selectedJob && (
           <div className="mt-4">
             <h4 className="font-semibold">Requirements:</h4>
-            <p>{jobs.find(job => job.id === selectedJob)?.requirements}</p>
+            <p>{selectedJob.requirements}</p>
             <h4 className="font-semibold mt-2">Escrow Amount:</h4>
-            <p>{jobs.find(job => job.id === selectedJob)?.escrowAmount} ETH</p>
+            <p>{selectedJob.escrowAmount.toString()} xDAI</p>
+            <h4 className="font-semibold mt-2">Requester:</h4>
+            <p>{selectedJob.requester}</p>
+            <h4 className="font-semibold mt-2">Worker:</h4>
+            <p>{selectedJob.worker === '0x0000000000000000000000000000000000000000' ? 'Not assigned' : selectedJob.worker}</p>
+            {selectedJob.content && (
+              <>
+                <h4 className="font-semibold mt-2">Submitted Content:</h4>
+                <p>{selectedJob.content}</p>
+              </>
+            )}
           </div>
         )}
       </CardContent>

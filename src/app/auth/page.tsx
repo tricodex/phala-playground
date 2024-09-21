@@ -12,7 +12,7 @@ export default function AuthPage() {
 
   const handleSignIn = async () => {
     setIsLoading(true);
-    await signIn('worldcoin', { callbackUrl: '/flow' });
+    await signIn('worldcoin', { callbackUrl: '/service-marketplace' });
     setIsLoading(false);
   };
 

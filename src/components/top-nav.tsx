@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { User } from 'lucide-react';
 import WalletButton from './dynamic';  // Import the WalletButton component
+import Image from 'next/image';
 
 export function TopNav() {
   const { data: session, status } = useSession();
@@ -21,7 +22,7 @@ export function TopNav() {
 
   const handleSignIn = async () => {
     setIsLoading(true);
-    await signIn('worldcoin', { callbackUrl: '/flow' });
+    await signIn('worldcoin', { callbackUrl: '/service-marketplace' });
     setIsLoading(false);
   };
 
@@ -33,9 +34,10 @@ export function TopNav() {
 
   return (
     <nav className="flex justify-between items-center p-4 bg-background border-b">
-      <Link href="/" className="text-xl font-bold">
-        Web3 Fiverr
-      </Link>
+      <Link href="/" className="text-xl font-bold flex items-center top-logo-container">
+    <span><Image src="/logo.svg" alt="3er Logo" width={50} height={50} className="top-landing-logo-image" /></span> 
+    <span className="top-logo-text">3er</span>
+</Link>
       <div className="flex items-center space-x-4">
         {status === 'authenticated' ? (
           <DropdownMenu>

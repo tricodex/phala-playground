@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Job } from "@/types";
+import { createJob, fetchXdaiPrice } from '@/utils/blockchain';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import type { Job } from '@/types';
 
 interface CreateRequestProps {
   onRequestCreated: (newJob: Job) => void;
@@ -18,31 +20,67 @@ export function CreateRequest({ onRequestCreated }: CreateRequestProps) {
   const [escrowAmount, setEscrowAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { primaryWallet } = useDynamicContext();
 
   const handleCreateRequest = async () => {
     if (!requirements.trim() || !escrowAmount) {
       toast({ title: "Error", description: "Please enter the service requirements and escrow amount.", variant: "destructive" });
       return;
     }
+    if (!primaryWallet) {
+      toast({ title: "Error", description: "Please connect your wallet.", variant: "destructive" });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const response = await fetch('/api/job', {
+      const xdaiPrice = await fetchXdaiPrice(); 
+      const MINIMUM_ESCROW_AMOUNT_USD = 15; 
+      const MINIMUM_ESCROW_AMOUNT_XDAI = Math.ceil(MINIMUM_ESCROW_AMOUNT_USD / xdaiPrice);
+
+      if (parseFloat(escrowAmount) < MINIMUM_ESCROW_AMOUNT_XDAI) {
+        toast({ 
+          title: "Error", 
+          description: `Minimum escrow amount is ${MINIMUM_ESCROW_AMOUNT_XDAI} xDAI`, 
+          variant: "destructive" 
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const escrowAmountWei = BigInt(Math.floor(parseFloat(escrowAmount) * 1e18));
+      const txHash = await createJob(primaryWallet.connector, requirements, escrowAmountWei);
+      console.log('Job created:', txHash);
+
+      const response = await fetch('/api/phala-ai-agent', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requirements, escrowAmount: parseFloat(escrowAmount) }),
+        body: JSON.stringify({ 
+          action: 'createRequest', 
+          data: { 
+            requirements, 
+            escrowAmount // Send the original string value
+          } 
+        })
       });
-      if (!response.ok) throw new Error('Failed to create request');
-      const data = await response.json();
-      
-      onRequestCreated(data.job);
-      
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create request');
+      }
+
+      const { job: newJob } = await response.json(); 
+      onRequestCreated(newJob);
+
       toast({ 
         title: "Request created", 
-        description: `Your request ID is ${data.job.id}. Escrow amount: ${escrowAmount} ETH`,
-        action: <ToastAction altText="Copy ID" onClick={() => navigator.clipboard.writeText(data.job.id)}>Copy ID</ToastAction>,
+        description: `Your request has been created with an escrow amount of ${escrowAmount} xDAI`,
+        action: <ToastAction altText="OK" onClick={() => {}}>OK</ToastAction>,
       });
+
       setRequirements('');
       setEscrowAmount('');
+
     } catch (err) {
       console.error('Error creating request:', err);
       toast({ title: "Error", description: "Failed to create request. Please try again.", variant: "destructive" });
@@ -65,7 +103,7 @@ export function CreateRequest({ onRequestCreated }: CreateRequestProps) {
           className="mb-4"
         />
         <div className="mb-4">
-          <Label htmlFor="escrow-amount">Escrow Amount (ETH)</Label>
+          <Label htmlFor="escrow-amount">Escrow Amount (xDAI)</Label>
           <Input
             id="escrow-amount"
             type="number"

@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User } from 'lucide-react';
+import WalletButton from '@/components/dynamic'; // Import WalletButton
 
 export function TopNav() {
   const { data: session, status } = useSession();

@@ -36,6 +36,8 @@ async function fetchXdaiPrice(): Promise<number> {
 
 async function handleCreateRequest(data: { requirements: string, escrowAmount: string }): Promise<NextResponse> {
   try {
+    console.log('Handling create request:', data);
+
     const { requirements, escrowAmount = '1' } = data;
     const jobs = await getJobs();
 

@@ -22,6 +22,15 @@ export default function ServiceMarketplace() {
     fetchJobs();
   }, []);
 
+
+useEffect(() => {
+  if (!primaryWallet) {
+    console.error("No wallet connected");
+  } else {
+    console.log("Wallet connected:", primaryWallet);
+  }
+}, [primaryWallet]);
+
   const fetchJobs = async () => {
     try {
       const jobCount = await readJobCounter();

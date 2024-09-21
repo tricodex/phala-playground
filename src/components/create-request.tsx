@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,  useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,23 +21,35 @@ export function CreateRequest({ onRequestCreated }: CreateRequestProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { primaryWallet } = useDynamicContext();
+  console.log('primaryWallet:', primaryWallet);
+
+  useEffect(() => {
+    if (primaryWallet && !primaryWallet.connector) {
+      console.error('Wallet connected but connector is undefined');
+      toast({ title: "Error", description: "Wallet connection issue. Please reconnect.", variant: "destructive" });
+    }
+  }, [primaryWallet, toast]);
 
   const handleCreateRequest = async () => {
+    console.log('handleCreateRequest called');
     if (!requirements.trim() || !escrowAmount) {
       toast({ title: "Error", description: "Please enter the service requirements and escrow amount.", variant: "destructive" });
       return;
     }
-    if (!primaryWallet) {
+    if (!primaryWallet || !primaryWallet.connector) {
       toast({ title: "Error", description: "Please connect your wallet.", variant: "destructive" });
       return;
     }
-
+  
     setIsLoading(true);
     try {
       const xdaiPrice = await fetchXdaiPrice(); 
+      console.log('xDAI price:', xdaiPrice);
       const MINIMUM_ESCROW_AMOUNT_USD = 15; 
       const MINIMUM_ESCROW_AMOUNT_XDAI = Math.ceil(MINIMUM_ESCROW_AMOUNT_USD / xdaiPrice);
-
+      console.log('Minimum escrow amount (xDAI):', MINIMUM_ESCROW_AMOUNT_XDAI);
+      console.log('Entered escrow amount:', escrowAmount);
+  
       if (parseFloat(escrowAmount) < MINIMUM_ESCROW_AMOUNT_XDAI) {
         toast({ 
           title: "Error", 
@@ -47,11 +59,13 @@ export function CreateRequest({ onRequestCreated }: CreateRequestProps) {
         setIsLoading(false);
         return;
       }
-
+  
       const escrowAmountWei = BigInt(Math.floor(parseFloat(escrowAmount) * 1e18));
+      console.log('Calling createJob with:', { requirements, escrowAmountWei });
       const txHash = await createJob(primaryWallet.connector, requirements, escrowAmountWei);
       console.log('Job created:', txHash);
-
+  
+      console.log('Sending request to API');
       const response = await fetch('/api/phala-ai-agent', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,28 +73,29 @@ export function CreateRequest({ onRequestCreated }: CreateRequestProps) {
           action: 'createRequest', 
           data: { 
             requirements, 
-            escrowAmount // Send the original string value
+            escrowAmount 
           } 
         })
       });
-
+      console.log('API response status:', response.status);
+      const responseData = await response.json();
+      console.log('API response data:', responseData);
+  
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create request');
+        throw new Error(responseData.error || 'Failed to create request');
       }
-
-      const { job: newJob } = await response.json(); 
-      onRequestCreated(newJob);
-
+  
+      onRequestCreated(responseData.job);
+  
       toast({ 
         title: "Request created", 
         description: `Your request has been created with an escrow amount of ${escrowAmount} xDAI`,
         action: <ToastAction altText="OK" onClick={() => {}}>OK</ToastAction>,
       });
-
+  
       setRequirements('');
       setEscrowAmount('');
-
+  
     } catch (err) {
       console.error('Error creating request:', err);
       toast({ title: "Error", description: "Failed to create request. Please try again.", variant: "destructive" });
@@ -88,6 +103,9 @@ export function CreateRequest({ onRequestCreated }: CreateRequestProps) {
       setIsLoading(false);
     }
   };
+
+  
+  
 
   return (
     <Card className="mb-4">

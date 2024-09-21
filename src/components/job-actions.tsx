@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,15 @@ export function JobActions({ selectedJob, onJobUpdated, onVerificationResult, on
   });
   const { toast } = useToast();
   const { primaryWallet } = useDynamicContext();
+
+
+useEffect(() => {
+  if (!primaryWallet) {
+    console.error("No wallet connected");
+  } else {
+    console.log("Wallet connected:", primaryWallet);
+  }
+}, [primaryWallet]);
 
   const handleAcceptJob = async () => {
     setIsLoading(prev => ({ ...prev, acceptJob: true }));

@@ -3,6 +3,7 @@
 import { createPublicClient, http, createWalletClient, custom } from 'viem';
 import contractAbi from '@/utils/singapore_abi.json';
 
+
 interface Chain {
   id: number;
   name: string;
@@ -41,6 +42,9 @@ const publicClient = createPublicClient({
 });
 
 export const getWalletClient = (provider: any) => {
+  if (!provider) {
+    throw new Error('Provider is undefined');
+  }
   return createWalletClient({
     chain: chiadoTestnet,
     transport: custom(provider),
@@ -63,8 +67,13 @@ export const readJobCounter = async () => {
 
 export const createJob = async (provider: any, description: string, value: bigint) => {
   try {
+    console.log('Creating job with:', { provider, description, value });
+    if (!provider) {
+      throw new Error('Provider is undefined');
+    }
     const walletClient = getWalletClient(provider);
     const [address] = await walletClient.getAddresses();
+    console.log('Wallet address:', address);
 
     const { request } = await publicClient.simulateContract({
       address: contractAddress,
@@ -74,10 +83,13 @@ export const createJob = async (provider: any, description: string, value: bigin
       account: address,
       value: value,
     });
+    console.log('Simulation successful');
 
-    return walletClient.writeContract(request);
+    const txHash = await walletClient.writeContract(request);
+    console.log('Transaction sent:', txHash);
+    return txHash;
   } catch (error) {
-    console.error('Error creating job:', error);
+    console.error('Error in createJob:', error);
     throw error;
   }
 };

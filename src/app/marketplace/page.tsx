@@ -13,8 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DynamicContextProvider, DynamicWidget } from "@dynamic-labs/sdk-react-core";
-import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
 
 interface Job {
   id: string;

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Protest+Guerrilla&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -89,4 +91,106 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+
+
+.landing-page {
+  background-image: url('/bg.jpeg');
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  padding: 2rem;
+}
+
+.landing-hero {
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 2rem;
+  border-radius: 1rem;
+  margin-bottom: 2rem;
+}
+
+.landing-hero h1 {
+  font-size: 3rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.landing-hero p {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.landing-job-offerings {
+  width: 100%;
+  max-width: 1200px;
+}
+
+.landing-job-offerings h2 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: white;
+}
+
+.landing-job-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.landing-job-card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 2px solid black;
+  transition: transform 0.3s ease;
+}
+
+.landing-job-card:hover {
+  transform: translateY(-5px);
+}
+
+.landing-job-image {
+  height: 150px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.landing-job-card .card-title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: black;
+}
+
+.landing-job-card .card-description {
+  font-weight: bold;
+  color: #4a5568;
+}
+
+.landing-job-card p {
+  color: #2d3748;
+}
+
+.logo-text {
+  font-family: 'Protest Guerrilla', sans-serif;
+  font-size: 2rem;
+  font-weight: bold;
+  color: white;
+  /* margin-bottom: 1rem; */
+} 
+
+.logo-image {
+  filter: invert(1);
+}
+
+.ter-logo-image { 
+  width: 100px;
+  height: 100px;
 }

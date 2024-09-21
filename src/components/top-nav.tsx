@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User } from 'lucide-react';
+import Image from 'next/image';
 
 export function TopNav() {
   const { data: session, status } = useSession();
@@ -32,8 +33,11 @@ export function TopNav() {
 
   return (
     <nav className="flex justify-between items-center p-4 bg-background border-b">
-      <Link href="/" className="text-xl font-bold">
-        Web3 Fiverr
+      <Link href="/" className="logo-text">
+        <div className="flex items-center">
+          <Image className='' src="/logo.svg" alt="World Coin Logo" width="44" height="16"/>
+          <span className="">3er</span>
+        </div>
       </Link>
       <div>
         {status === 'authenticated' ? (
@@ -62,6 +66,7 @@ export function TopNav() {
         ) : (
           <Button onClick={handleSignIn} disabled={isLoading || status === 'loading'}>
             {isLoading ? 'Signing in...' : 'Sign in with World ID'}
+            <Image className='logo-image ml-2' src="/worldcoin-org-wld-logo.svg" alt="World Coin Logo" width="16" height="16"/>
           </Button>
         )}
       </div>

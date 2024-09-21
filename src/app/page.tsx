@@ -1,123 +1,93 @@
-// app/page.tsx
-'use client'
+// src/app/page.tsx
+'use client';
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { signIn } from 'next-auth/react';
+import Image from 'next/image';
 
-// Define the type for verificationResult
-type VerificationResult = {
-  isValid: boolean;
-  reason: string;
-  timestamp: string;
-  contentHash: string;
-};
+const jobOfferings = [
+  {
+    title: 'Professional Resume Writing',
+    description: 'Craft a standout resume that highlights your skills and experience.',
+    image: '/1.webp',
+    price: '$50'
+  },
+  {
+    title: 'SEO-Optimized Blog Post',
+    description: 'Create engaging, keyword-rich content to boost your website\'s visibility.',
+    image: '/2.webp',
+    price: '$30'
+  },
+  {
+    title: 'Social Media Content Package',
+    description: 'Develop a week\'s worth of captivating posts for your social platforms.',
+    image: '/3.webp',
+    price: '$75'
+  },
+  {
+    title: 'Product Description Writing',
+    description: 'Compose compelling product descriptions that drive sales.',
+    image: '/4.webp',
+    price: '$20'
+  }
+];
 
 export default function Home() {
-  const [step, setStep] = useState(1)
-  const [requirements, setRequirements] = useState('')
-  const [content, setContent] = useState('')
-  const [requestId, setRequestId] = useState('')
-  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleCreateRequest = async () => {
-    const res = await fetch('/api/phala-ai-agent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'createRequest', data: { requirements } }),
-    })
-    const data = await res.json()
-    setRequestId(data.requestId)
-    setStep(2)
-  }
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/service-marketplace');
+    }
+  }, [status, router]);
 
-  const handleSubmitContent = async () => {
-    await fetch('/api/phala-ai-agent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'submitContent', data: { requestId, content } }),
-    })
-    setStep(3)
-  }
+  const handleSignIn = async () => {
+    setIsLoading(true);
+    await signIn('worldcoin', { callbackUrl: '/marketplace' });
+    setIsLoading(false);
+  };
 
-  const handleVerifyContent = async () => {
-    const res = await fetch('/api/phala-ai-agent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'verifyContent', data: { requestId } }),
-    })
-    const data: VerificationResult = await res.json()
-    setVerificationResult(data)
-    setStep(4)
+  if (status === 'loading') {
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">AI Verification Playground</h1>
-      
-      {step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 1: Create Request</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="Enter requirements"
-              value={requirements}
-              onChange={(e) => setRequirements(e.target.value)}
-              className="mb-4"
-            />
-            <Button onClick={handleCreateRequest}>Create Request</Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {step === 2 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 2: Submit Content</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea
-              placeholder="Enter content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="mb-4"
-            />
-            <Button onClick={handleSubmitContent}>Submit Content</Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {step === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 3: Verify Content</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleVerifyContent}>Verify Content</Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {step === 4 && verificationResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Verification Result</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Alert>
-              <AlertTitle>Is Valid: {verificationResult.isValid ? 'Yes' : 'No'}</AlertTitle>
-              <AlertDescription>{verificationResult.reason}</AlertDescription>
-            </Alert>
-            <pre className="mt-4 p-4 bg-gray-100 rounded">
-              {JSON.stringify(verificationResult, null, 2)}
-            </pre>
-          </CardContent>
-        </Card>
-      )}
+    <div className="landing-page">
+      <div className="landing-hero">
+        <h1>Web3 Freelance Marketplace</h1>
+        <p>Connect, Create, and Verify with AI-Powered Trust</p>
+        <Button onClick={handleSignIn} disabled={isLoading}>
+          {isLoading ? 'Signing in...' : 'Sign in with World ID'}        
+          <Image className='logo-image ml-2'src="/worldcoin-org-wld-logo.svg" alt="World Coin Logo" width="16" height="16"/>
+        </Button>
+      </div>
+      <div className="landing-job-offerings">
+        <h2>Featured Services</h2>
+        <div className="landing-job-grid">
+          {jobOfferings.map((job, index) => (
+            <Card key={index} className="landing-job-card">
+              <CardHeader>
+                <div className="landing-job-image" style={{backgroundImage: `url(${job.image})`}}></div>
+                <CardTitle>{job.title}</CardTitle>
+                <CardDescription>{job.price}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p>{job.description}</p>
+              </CardContent>
+              <CardFooter>
+                <Button disabled>View Details</Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
-  )
+  );
 }

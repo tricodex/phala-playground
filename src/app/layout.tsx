@@ -4,6 +4,7 @@ import { TopNav } from '@/components/top-nav';
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import AuthGate from '@/components/auth-gate';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -17,8 +18,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Web3 Fiverr",
-  description: "Decentralized service marketplace",
+  title: "Web3 Freelance Marketplace",
+  description: "Connect, Create, and Verify with AI-Powered Trust",
 };
 
 export default function RootLayout({
@@ -33,9 +34,11 @@ export default function RootLayout({
       >
         <NextAuthSessionProvider>
           <TopNav />
-          <main className="container mx-auto p-4">
-            {children}
-          </main>
+          <AuthGate>
+            <main className="container mx-auto p-4">
+              {children}
+            </main>
+          </AuthGate>
         </NextAuthSessionProvider>
       </body>
     </html>

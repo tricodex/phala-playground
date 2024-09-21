@@ -17,10 +17,9 @@ export async function GET(request: NextRequest) {
     {
       attestation(id: "${attestationId.toLowerCase()}") {
         id
-        schemaId
         attester
         data
-        timestamp
+        
       }
     }
   `;

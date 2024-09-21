@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface AttestationDetailsProps {
   jobId: string;
@@ -12,23 +14,19 @@ interface AttestationDetailsProps {
 
 interface AttestationInfo {
   id: string;
-  schemaId: string;
-  recipient: string;
   attester: string;
-  time: number;
-  expirationTime: number;
-  revocationTime: number;
-  refUID: string;
   data: string;
 }
 
 export function AttestationDetails({ jobId, attestationId }: AttestationDetailsProps) {
   const [attestationInfo, setAttestationInfo] = useState<AttestationInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAttestationInfo = async () => {
       setIsLoading(true);
+      setError(null);  // Clear any previous errors
       try {
         const response = await fetch(`/api/attestation-info?attestationId=${attestationId}`);
         if (!response.ok) {
@@ -37,9 +35,10 @@ export function AttestationDetails({ jobId, attestationId }: AttestationDetailsP
         }
         const data = await response.json();
         setAttestationInfo(data);
-      } catch (error) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error:any) {
         console.error('Error fetching attestation info:', error);
-        // You might want to set an error state here to display to the user
+        setError(error.message);  // Set error state
       } finally {
         setIsLoading(false);
       }
@@ -52,6 +51,10 @@ export function AttestationDetails({ jobId, attestationId }: AttestationDetailsP
 
   if (isLoading) {
     return <Card><CardContent>Loading attestation details...</CardContent></Card>;
+  }
+
+  if (error) {
+    return <Card><CardContent>Error: {error}</CardContent></Card>;
   }
 
   if (!attestationInfo) {
@@ -67,13 +70,22 @@ export function AttestationDetails({ jobId, attestationId }: AttestationDetailsP
         <CardDescription>Job ID: {jobId}</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
+        <Alert variant="default">
+          <AlertTitle>Attestation Successful</AlertTitle>
+          <AlertDescription>Details of the attestation are displayed below.</AlertDescription>
+        </Alert>
+
+        <div className="space-y-2 mt-4">
           <p><strong>Attestation ID:</strong> <Badge variant="outline">{attestationInfo.id}</Badge></p>
-          <p><strong>Schema ID:</strong> {attestationInfo.schemaId}</p>
-          <p><strong>Recipient:</strong> {attestationInfo.recipient}</p>
           <p><strong>Attester:</strong> {attestationInfo.attester}</p>
-          <p><strong>Time:</strong> {new Date(attestationInfo.time * 1000).toLocaleString()}</p>
-          <p><strong>Expiration:</strong> {attestationInfo.expirationTime ? new Date(attestationInfo.expirationTime * 1000).toLocaleString() : 'N/A'}</p>
+
+          <div className="space-y-2">
+            <p><strong>Data:</strong></p>
+            <ScrollArea className="h-24 p-2 border rounded-md bg-gray-100">
+              <p className="break-all">{attestationInfo.data}</p>
+            </ScrollArea>
+          </div>
+
           <Button variant="outline" onClick={() => window.open(blockscoutUrl, '_blank')}>
             View on Blockscout
             <ExternalLink className="ml-2 h-4 w-4" />

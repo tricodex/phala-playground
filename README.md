@@ -1,60 +1,61 @@
-# Phala-agent-playground
+**README.md**
+
+**Web3 Fiverr - Decentralized Service Marketplace**
 
 **Overview**
 
-Creating, submitting, and verifying content using a Phala Network AI agent. It involves both frontend (Next.js) and backend (API routes) components working in conjunction.
+This project implements a decentralized service marketplace on the Phala Network, enabling users to request and provide services in a trustless and transparent manner. It leverages World ID for authentication, Phala Network's AI agent for content verification, and the Viem agent for on-chain attestation and escrow management.
 
-**Frontend (Next.js)**
+**Key Features**
 
-* **`Home` Component:**
-    * Manages the user interface and interaction flow.
-    * Utilizes state variables to track the current step, requirements, content, request ID, and verification result.
-    * Provides input fields for requirements and content.
-    * Includes buttons to trigger actions: "Create Request," "Submit Content," and "Verify Content."
-    * Displays the verification result in an alert and a formatted JSON block.
+* **Service Requests:** Users can create service requests specifying their requirements and deposit an escrow amount.
+* **Service Provision:** Providers can browse open requests, accept them, and submit completed work.
+* **Content Verification:** Phala Network's AI agent verifies the submitted content against the requirements.
+* **On-Chain Attestation:** Upon successful verification, an on-chain attestation is created using the Viem agent, and the escrow is released to the provider.
+* **World ID Authentication:** Users authenticate using World ID, ensuring unique human identity verification.
 
-**Backend (API Routes)**
+**Tech Stack**
 
-* **`/api/phala-ai-agent/route.ts`:**
-    * Handles POST requests from the frontend.
-    * Parses the request body to determine the `action` and associated `data`.
-    * Implements three main handlers:
-        * `handleCreateRequest`:
-            * Generates a unique request ID.
-            * Saves the requirements and a "pending" status to a JSON file in the `data/requests` directory.
-        * `handleSubmitContent`:
-            * Saves the submitted content to a JSON file in the `data/contents` directory, linked to the corresponding request ID.
-        * `handleVerifyContent`:
-            * Reads the requirements and content from their respective JSON files.
-            * Constructs a GET request to the Phala AI agent, including the requirements, content and secret key as query parameters.
-            * Fetches the response from the Phala agent.
-            * Parses the response and saves the verification result (likely containing `isValid` and `reason`) to a JSON file in the `data/verifications` directory.
-            * Returns the verification result to the frontend.
+* **Frontend:** Next.js 13 App Directory
+* **Styling:** Tailwind CSS, Radix UI
+* **State Management:** React Context (for global state)
+* **Authentication:** NextAuth.js with Worldcoin provider
+* **Backend:** Next.js API routes
+* **Blockchain Interaction:** Viem
+* **External Services:** Phala Network AI agent, World ID
 
-**Interaction Flow**
+**Project Structure**
 
-1. **User enters requirements and clicks "Create Request."**
-   * The frontend sends a POST request to the backend API route.
-   * The `handleCreateRequest` handler generates a request ID, saves the requirements, and returns the ID to the frontend.
+* **`app`:** Contains the main application pages and layouts.
+* **`components`:** Reusable UI components.
+* **`hooks`:** Custom React hooks for state management and data fetching.
+* **`lib`:** Utility functions.
+* **`public`:** Static assets like fonts and images.
+* **`types`:** TypeScript type definitions.
 
-2. **User enters content and clicks "Submit Content."**
-   * The frontend sends another POST request to the backend.
-   * The `handleSubmitContent` handler saves the content associated with the request ID.
+**Setup and Run**
 
-3. **User clicks "Verify Content."**
-   * The frontend sends a final POST request.
-   * The `handleVerifyContent` handler:
-     * Fetches the requirements and content.
-     * Makes a GET request to the Phala AI agent with the necessary data.
-     * Receives the verification result from the agent.
-     * Saves the result and sends it back to the frontend.
+1. Clone the repository.
+2. Install dependencies: `npm install`
+3. Set up environment variables:
+   * `WLD_CLIENT_ID`: Your World ID client ID
+   * `WLD_CLIENT_SECRET`: Your World ID client secret
+   * `PRIVATE_KEY`: Your private key for blockchain interactions
+   * `VIEM_AGENT_CID`: The CID of your Phala Viem agent
+   * `PHALA_VIEM_SECRET_KEY`: The secret key for your Phala Viem agent
+   * `PHALA_OPENAI_SECRET_KEY`: The secret key for the Phala OpenAI agent
+4. Run the development server: `npm run dev`
 
-4. **Frontend displays the verification result.**
-   * The `Home` component shows whether the content is valid and the reason provided by the AI agent.
+**Workflow**
 
-**Key Points**
+1. **Requester:**
+   * Creates a service request, specifying requirements and escrow amount.
+2. **Provider:**
+   * Browses open requests and accepts one.
+   * Completes the work and submits the content.
+3. **Requester:**
+   * Verifies the content using the Phala AI agent.
+   * If valid, creates an on-chain attestation using the Viem agent, releasing the escrow to the provider.
 
-* **Phala AI Agent:** The core verification logic resides within the Phala AI agent, which you've deployed separately. Its content hash (`AGENT_CID`) is used to access it.
-* **Data Storage:** The system uses JSON files to store requests, content, and verification results locally.
-* **API Interaction:** The frontend interacts with the backend via API routes, and the backend communicates with the Phala AI agent through GET requests.
-* **Verification:** The AI agent performs the actual content verification based on the provided requirements and content, returning a result indicating validity and a reason. 
+
+

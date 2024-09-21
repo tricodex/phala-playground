@@ -1,61 +1,59 @@
-**README.md**
+# AI-Powered Decentralized Trustless Service Marketplace
 
-**Web3 Fiverr - Decentralized Service Marketplace**
+This project implements a cutting-edge decentralized service marketplace leveraging AI for content verification and blockchain technology for secure attestations. It provides a trustless environment for service requesters and providers to interact, with built-in quality assurance mechanisms powered by Phala Network AI agents.
 
-**Overview**
+## Key Features
 
-This project implements a decentralized service marketplace on the Phala Network, enabling users to request and provide services in a trustless and transparent manner. It leverages World ID for authentication, Phala Network's AI agent for content verification, and the Viem agent for on-chain attestation and escrow management.
+1. **AI Content Verification**: Utilizes OpenAI's GPT models through Phala Network AI agents to assess submitted work against specified requirements.
+2. **Blockchain Attestations**: Employs the Sign Protocol on the Gnosis Chiado network for creating on-chain attestations of verified work.
+3. **Decentralized Architecture**: Leverages Phala Network for secure, decentralized execution of AI agents and off-chain computations.
+4. **Privacy-Preserving**: Utilizes Phala's Trusted Execution Environment (TEE) to ensure data privacy and security.
 
-**Key Features**
+## How It Works
 
-* **Service Requests:** Users can create service requests specifying their requirements and deposit an escrow amount.
-* **Service Provision:** Providers can browse open requests, accept them, and submit completed work.
-* **Content Verification:** Phala Network's AI agent verifies the submitted content against the requirements.
-* **On-Chain Attestation:** Upon successful verification, an on-chain attestation is created using the Viem agent, and the escrow is released to the provider.
-* **World ID Authentication:** Users authenticate using World ID, ensuring unique human identity verification.
+### 1. Service Request Creation
+- Users create service requests specifying requirements.
+- Requests are stored securely using Phala Network's infrastructure.
 
-**Tech Stack**
+### 2. Service Provision
+- Providers browse and accept open requests.
+- Upon completion, providers submit their work through the platform.
 
-* **Frontend:** Next.js 13 App Directory
-* **Styling:** Tailwind CSS, Radix UI
-* **State Management:** React Context (for global state)
-* **Authentication:** NextAuth.js with Worldcoin provider
-* **Backend:** Next.js API routes
-* **Blockchain Interaction:** Viem
-* **External Services:** Phala Network AI agent, World ID
+### 3. AI Content Verification
+The system uses a Phala Network AI agent for content verification:
 
-**Project Structure**
+- **Agent**: OpenAI-powered AI agent hosted on Phala Network
+- **Functionality**: 
+  - Assesses submitted content against both general and specific requirements.
+  - Uses OpenAI's GPT models for intelligent evaluation.
+  - Checks for originality, grammatical correctness, coherence, and relevance.
+- **Output**: Produces a verification result including validity status and reasoning.
 
-* **`app`:** Contains the main application pages and layouts.
-* **`components`:** Reusable UI components.
-* **`hooks`:** Custom React hooks for state management and data fetching.
-* **`lib`:** Utility functions.
-* **`public`:** Static assets like fonts and images.
-* **`types`:** TypeScript type definitions.
+### 4. Blockchain Attestation
+Upon successful verification, an on-chain attestation is created:
 
-**Setup and Run**
+- **Agent**: Viem Sign Agent hosted on Phala Network
+- **Functionality**:
+  - Creates attestations on the Gnosis Chiado network using the Sign Protocol.
+  - Securely manages private keys for signing transactions within Phala's TEE.
+- **Output**: Generates a unique attestation ID for the completed job.
 
-1. Clone the repository.
-2. Install dependencies: `npm install`
-3. Set up environment variables:
-   * `WLD_CLIENT_ID`: Your World ID client ID
-   * `WLD_CLIENT_SECRET`: Your World ID client secret
-   * `PRIVATE_KEY`: Your private key for blockchain interactions
-   * `VIEM_AGENT_CID`: The CID of your Phala Viem agent
-   * `PHALA_VIEM_SECRET_KEY`: The secret key for your Phala Viem agent
-   * `PHALA_OPENAI_SECRET_KEY`: The secret key for the Phala OpenAI agent
-4. Run the development server: `npm run dev`
+### 5. Escrow Release
+- Upon successful attestation, the escrow is automatically released to the service provider.
 
-**Workflow**
+## Technical Stack
 
-1. **Requester:**
-   * Creates a service request, specifying requirements and escrow amount.
-2. **Provider:**
-   * Browses open requests and accepts one.
-   * Completes the work and submits the content.
-3. **Requester:**
-   * Verifies the content using the Phala AI agent.
-   * If valid, creates an on-chain attestation using the Viem agent, releasing the escrow to the provider.
+- **AI Agents**: Phala Network AI agents (OpenAI integration)
+- **Blockchain Interaction**: Viem for Ethereum interactions
+- **Attestation Protocol**: Sign Protocol on Gnosis Chiado
+- **Secure Computation**: Phala Network's Trusted Execution Environment (TEE)
 
+## Unique Selling Points
 
+1. **AI-Powered Quality Assurance**: Ensures high-quality service delivery through intelligent content verification.
+2. **Trustless Operations**: Eliminates the need for intermediaries through blockchain attestations.
+3. **Enhanced Privacy and Security**: Utilizes Phala Network's TEE for secure, private computations.
+4. **Decentralized AI Execution**: Runs AI models in a decentralized manner, ensuring availability and censorship resistance.
+5. **Scalable Infrastructure**: Leverages Phala Network's distributed computing power for efficient processing.
 
+This platform represents a significant advancement in decentralized marketplaces, combining the power of AI with the security and privacy of Phala Network's TEE infrastructure. It creates a robust, efficient, and trustworthy environment for digital services, ensuring both quality and confidentiality in service delivery.

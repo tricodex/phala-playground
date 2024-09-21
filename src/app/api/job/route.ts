@@ -1,45 +1,56 @@
-import { NextResponse } from 'next/server';
+// src/app/api/job/route.ts
+
+import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
+import { Job } from '@/types';
 
-const jobsFilePath = path.join(process.cwd(), 'data', 'jobs.json');
+const DATA_DIR = path.join(process.cwd(), 'data');
+const JOBS_FILE = path.join(DATA_DIR, 'jobs.json');
 
-export async function GET() {
+async function getJobs(): Promise<Job[]> {
   try {
-    const jobsData = await fs.readFile(jobsFilePath, 'utf8');
-    const jobs = JSON.parse(jobsData);
-    return NextResponse.json(jobs);
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    const data = await fs.readFile(JOBS_FILE, 'utf8');
+    return JSON.parse(data);
   } catch (error) {
-    console.error('Error reading jobs:', error);
-    return NextResponse.json({ error: 'Failed to fetch jobs' }, { status: 500 });
+    return ['error', 'ENOENT'].includes((error as string)) ? [] : Promise.reject(error);
   }
 }
 
-export async function POST(request: Request) {
-    try {
-      const job = await request.json();
-      const jobsData = await fs.readFile(jobsFilePath, 'utf8');
-      const jobs = JSON.parse(jobsData);
-      jobs.push(job);
-      await fs.writeFile(jobsFilePath, JSON.stringify(jobs, null, 2));
-      return NextResponse.json({ success: true, job });
-    } catch (error) {
-      console.error('Error adding job:', error);
-      return NextResponse.json({ error: 'Failed to add job' }, { status: 500 });
-    }
+async function saveJobs(jobs: Job[]): Promise<void> {
+  await fs.writeFile(JOBS_FILE, JSON.stringify(jobs, null, 2));
+}
+
+export async function GET(): Promise<NextResponse<Job[]>> {
+  const jobs = await getJobs();
+  return NextResponse.json(jobs);
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const jobData: Omit<Job, 'id' | 'status'> = await request.json();
+  const jobs = await getJobs();
+  const newJob: Job = {
+    ...jobData,
+    id: Date.now().toString(),
+    status: 'open',
+  };
+  jobs.push(newJob);
+  await saveJobs(jobs);
+  return NextResponse.json({ job: newJob });
+}
+
+export async function PUT(request: NextRequest): Promise<NextResponse> {
+  const { id, status, content }: Partial<Job> = await request.json();
+  const jobs = await getJobs();
+  const jobIndex = jobs.findIndex(job => job.id === id);
+  if (jobIndex !== -1) {
+    jobs[jobIndex] = { ...jobs[jobIndex], status: status || 'open', content };
+    await saveJobs(jobs);
+    return NextResponse.json({ job: jobs[jobIndex] });
   }
-  
-  export async function PUT(request: Request) {
-    try {
-      const updatedJob = await request.json();
-      const jobsData = await fs.readFile(jobsFilePath, 'utf8');
-      let jobs = JSON.parse(jobsData);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      jobs = jobs.map((job: any) => job.id === updatedJob.id ? updatedJob : job);
-      await fs.writeFile(jobsFilePath, JSON.stringify(jobs, null, 2));
-      return NextResponse.json({ success: true, job: updatedJob });
-    } catch (error) {
-      console.error('Error updating job:', error);
-      return NextResponse.json({ error: 'Failed to update job' }, { status: 500 });
-    }
-  }
+  return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+}
+
+export { getJobs, saveJobs };
+

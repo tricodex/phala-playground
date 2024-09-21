@@ -1,30 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// app/api/phala-ai-agent/route.ts
-import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-
-// const PHALA_GATEWAY_URL = 'https://wapo-testnet.phala.network';
-// const AGENT_CID = 'QmbbGCwhQuij7e2mxC8DNKNEvxuJYz9u5r8DkSug6C1Lgj';
-// const SECRET_KEY = process.env.PHALA_SECRET_KEY || ''; // Ensure SECRET_KEY is not undefined
+import { NextRequest, NextResponse } from 'next/server';
+// import fs from 'fs/promises';
+// import path from 'path';
+import { saveJobs, getJobs } from '../job/route';
 
 const PHALA_GATEWAY_URL = 'https://wapo-testnet.phala.network';
 const OPENAI_AGENT_CID = 'QmbbGCwhQuij7e2mxC8DNKNEvxuJYz9u5r8DkSug6C1Lgj';
 const SECRET_KEY = process.env.PHALA_OPENAI_SECRET_KEY || '';
 
-// Main POST request handler
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    console.log('Received POST request');
+    console.log('Received POST request to phala-ai-agent');
     const body = await request.json();
     console.log('Request body:', JSON.stringify(body, null, 2));
     const { action, data } = body;
-    
+
     switch (action) {
-      case 'createRequest':
-        return handleCreateRequest(data);
-      case 'submitContent':
-        return handleSubmitContent(data);
       case 'verifyContent':
         return handleVerifyContent(data);
       default:
@@ -37,94 +27,27 @@ export async function POST(request: Request) {
   }
 }
 
-// Handler to create a request and save it to file
-async function handleCreateRequest(data: any) {
-  try {
-    console.log('Creating request with data:', JSON.stringify(data, null, 2));
-    const { requirements } = data;
-    const requestId = Date.now().toString();
-    await saveJSON('requests', requestId, { requirements, status: 'pending' });
-    console.log('Request created with ID:', requestId);
-    return NextResponse.json({ requestId });
-  } catch (error) {
-    console.error('Error in handleCreateRequest:', error);
-    return NextResponse.json({ error: 'Failed to create request' }, { status: 500 });
-  }
-}
-
-// Handler to submit content and save it to file
-async function handleSubmitContent(data: any) {
-  try {
-    console.log('Submitting content with data:', JSON.stringify(data, null, 2));
-    const { requestId, content } = data;
-    await saveJSON('contents', requestId, { content });
-    console.log('Content submitted for request ID:', requestId);
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error in handleSubmitContent:', error);
-    return NextResponse.json({ error: 'Failed to submit content' }, { status: 500 });
-  }
-}
-
-// async function handleVerifyContent(data: any) {
-//     try {
-//       console.log('Verifying content with data:', JSON.stringify(data, null, 2));
-//       const { requestId } = data;
-//       const request = await readJSON('requests', requestId);
-//       const content = await readJSON('contents', requestId);
-  
-//       // Prepare query parameters for the GET request
-//       const queryParams = new URLSearchParams({
-//         requirements: request.requirements || '',
-//         content: content.content || '',
-//         key: SECRET_KEY, // This is the key to access the stored secrets
-//       });
-  
-//       // Sending the GET request to the Phala API
-//       const phalaResponse = await fetch(`${PHALA_GATEWAY_URL}/ipfs/${AGENT_CID}?${queryParams.toString()}`, {
-//         method: 'GET',
-//         headers: { 'Content-Type': 'application/json' },
-//       });
-  
-//       console.log('Phala API response status:', phalaResponse.status);
-//       console.log('Phala API response headers:', Object.fromEntries(phalaResponse.headers.entries()));
-  
-//       if (!phalaResponse.ok) {
-//         const errorText = await phalaResponse.text();
-//         console.error('Phala API error:', phalaResponse.status, errorText);
-//         throw new Error(`Phala API error: ${phalaResponse.status} ${phalaResponse.statusText}`);
-//       }
-  
-//       // Parsing and saving the verification result
-//       const responseText = await phalaResponse.text();
-//       let verificationResult;
-//       try {
-//         verificationResult = JSON.parse(responseText);
-//       } catch (error) {
-//         console.error('Error parsing Phala API response:', error);
-//         throw new Error('Invalid JSON response from Phala API');
-//       }
-  
-//       await saveJSON('verifications', requestId, verificationResult);
-//       console.log('Verification result saved for request ID:', requestId);
-//       return NextResponse.json(verificationResult);
-//     } catch (error) {
-//       console.error('Error in handleVerifyContent:', error);
-//       return NextResponse.json({ error: 'Failed to verify content' }, { status: 500 });
-//     }
-//   }
-
-// Update handleVerifyContent function
-async function handleVerifyContent(data: any) {
+async function handleVerifyContent(data: { requestId: string }) {
     try {
       console.log('Verifying content with data:', JSON.stringify(data, null, 2));
       const { requestId } = data;
-      const request = await readJSON('requests', requestId);
-      const content = await readJSON('contents', requestId);
+      
+      // Check if the job exists
+      const jobs = await getJobs(); // Import this function from api/job/route.ts
+      const job = jobs.find(j => j.id === requestId);
+      
+      if (!job) {
+        console.error(`Job not found for requestId: ${requestId}`);
+        return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      }
+  
+      // Use job data instead of reading from separate files
+      const requirements = job.requirements;
+      const content = job.content || '';
   
       const queryParams = new URLSearchParams({
-        requirements: request.requirements || '',
-        content: content.content || '',
+        requirements: requirements,
+        content: content,
         key: SECRET_KEY,
       });
   
@@ -140,7 +63,11 @@ async function handleVerifyContent(data: any) {
       }
   
       const verificationResult = await phalaResponse.json();
-      await saveJSON('verifications', requestId, verificationResult);
+      
+      // Update job status based on verification result
+      job.status = verificationResult.isValid ? 'validated' : 'submitted';
+      await saveJobs(jobs); // Import this function from api/job/route.ts
+  
       console.log('Verification result saved for request ID:', requestId);
       return NextResponse.json(verificationResult);
     } catch (error) {
@@ -148,30 +75,28 @@ async function handleVerifyContent(data: any) {
       return NextResponse.json({ error: 'Failed to verify content' }, { status: 500 });
     }
   }
-  
 
-// Function to save data as a JSON file
-async function saveJSON(type: string, id: string, data: any) {
-  try {
-    const dir = path.join(process.cwd(), 'data', type);
-    await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(path.join(dir, `${id}.json`), JSON.stringify(data, null, 2));
-    console.log(`JSON saved: ${type}/${id}`);
-  } catch (error) {
-    console.error(`Error saving JSON: ${type}/${id}`, error);
-    throw error;
-  }
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// async function saveJSON(type: string, id: string, data: any) {
+//   try {
+//     const dir = path.join(process.cwd(), 'data', type);
+//     await fs.mkdir(dir, { recursive: true });
+//     await fs.writeFile(path.join(dir, `${id}.json`), JSON.stringify(data, null, 2));
+//     console.log(`JSON saved: ${type}/${id}`);
+//   } catch (error) {
+//     console.error(`Error saving JSON: ${type}/${id}`, error);
+//     throw error;
+//   }
+// }
 
-// Function to read data from a JSON file
-async function readJSON(type: string, id: string) {
-  try {
-    const filePath = path.join(process.cwd(), 'data', type, `${id}.json`);
-    const data = await fs.readFile(filePath, 'utf8');
-    console.log(`JSON read: ${type}/${id}`);
-    return JSON.parse(data);
-  } catch (error) {
-    console.error(`Error reading JSON: ${type}/${id}`, error);
-    throw error;
-  }
-}
+// async function readJSON(type: string, id: string) {
+//   try {
+//     const filePath = path.join(process.cwd(), 'data', type, `${id}.json`);
+//     const data = await fs.readFile(filePath, 'utf8');
+//     console.log(`JSON read: ${type}/${id}`);
+//     return JSON.parse(data);
+//   } catch (error) {
+//     console.error(`Error reading JSON: ${type}/${id}`, error);
+//     throw error;
+//   }
+// }

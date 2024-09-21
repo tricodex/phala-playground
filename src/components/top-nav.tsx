@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User } from 'lucide-react';
+import WalletButton from './dynamic';  // Import the WalletButton component
 
 export function TopNav() {
   const { data: session, status } = useSession();
@@ -35,7 +36,7 @@ export function TopNav() {
       <Link href="/" className="text-xl font-bold">
         Web3 Fiverr
       </Link>
-      <div>
+      <div className="flex items-center space-x-4">
         {status === 'authenticated' ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -64,6 +65,8 @@ export function TopNav() {
             {isLoading ? 'Signing in...' : 'Sign in with World ID'}
           </Button>
         )}
+        {/* Add the WalletButton component */}
+        <WalletButton />
       </div>
     </nav>
   );

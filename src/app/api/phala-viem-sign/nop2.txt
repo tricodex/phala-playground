@@ -1,0 +1,62 @@
+import { NextResponse } from 'next/server';
+
+const PHALA_GATEWAY_URL = 'https://wapo-testnet.phala.network';
+const VIEM_AGENT_CID = process.env.VIEM_AGENT_CID || 'Qmdm1EiCjiFBp8Xw9brzZKY8DSRquk5h1Q3jER5Gq1udgR';
+const SECRET_KEY = process.env.PHALA_VIEM_SECRET_KEY || '';
+
+if (!VIEM_AGENT_CID || !SECRET_KEY) {
+  console.error('Missing environment variables: VIEM_AGENT_CID or PHALA_VIEM_SECRET_KEY');
+}
+
+export async function POST(request: Request) {
+  console.log('Received POST request to /api/phala-viem-sign');
+  try {
+    const { jobCid, status } = await request.json();
+    console.log('Request payload:', { jobCid, status });
+
+    if (!jobCid || !status) {
+      console.error('Missing required fields:', { jobCid, status });
+      return NextResponse.json({ error: 'Missing jobCid or status' }, { status: 400 });
+    }
+
+    const url = new URL(`${PHALA_GATEWAY_URL}/ipfs/${VIEM_AGENT_CID}`);
+    url.searchParams.append('key', SECRET_KEY);
+    console.log('Sending request to Phala API:', url.toString());
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        method: 'POST',
+        path: '/create-attestation',
+        queries: {},
+        secret: {},
+        headers: {},
+        body: JSON.stringify({ jobCid, status }),
+      }),
+    });
+
+    console.log('Phala API response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Phala API error:', response.status, errorText);
+      return NextResponse.json(
+        { error: `Phala API error: ${response.status} ${response.statusText}`, details: errorText },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    console.log('Successful response from Phala API:', data);
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error in Viem Sign route:', error);
+    return NextResponse.json(
+      { error: 'Internal Server Error', details: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
+  }
+}

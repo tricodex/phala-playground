@@ -154,7 +154,49 @@ export default function ServiceMarketplace() {
     }
   };
 
-  const handleCreateAttestation = async () => {
+//   const handleCreateAttestation = async () => {
+//     if (!selectedJob) {
+//       toast({ title: "Error", description: "Please select a job to create attestation.", variant: "destructive" });
+//       return;
+//     }
+//     setIsLoading(prev => ({ ...prev, createAttestation: true }));
+//     try {
+//       console.log('Creating attestation for job:', selectedJob);
+//       const response = await fetch('/api/phala-viem-sign', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ jobCid: selectedJob, status: 'completed' }),
+//       });
+  
+//       console.log('Response status:', response.status);
+  
+//       if (!response.ok) {
+//         const errorData = await response.json();
+//         console.error('Error response:', errorData);
+//         throw new Error(errorData.error || 'Failed to create attestation');
+//       }
+  
+//       const data = await response.json();
+//       console.log('Attestation creation response:', data);
+  
+//       setAttestationResult(data);
+//       if (data.success && data.attestation) {
+//         toast({ 
+//           title: "Attestation created", 
+//           description: `Attestation ID: ${data.attestation.attestationId}`,
+//           action: <ToastAction altText="Copy ID" onClick={() => navigator.clipboard.writeText(data.attestation.attestationId)}>Copy ID</ToastAction>,
+//         });
+//       } else {
+//         throw new Error(data.error || 'Failed to create attestation');
+//       }
+//     } catch (err) {
+//       console.error('Error creating attestation:', err);
+//       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to create attestation. Please try again.", variant: "destructive" });
+//     } finally {
+//       setIsLoading(prev => ({ ...prev, createAttestation: false }));
+//     }
+//   };
+const handleCreateAttestation = async () => {
     if (!selectedJob) {
       toast({ title: "Error", description: "Please select a job to create attestation.", variant: "destructive" });
       return;
@@ -179,15 +221,20 @@ export default function ServiceMarketplace() {
       const data = await response.json();
       console.log('Attestation creation response:', data);
   
-      setAttestationResult(data);
-      if (data.success && data.attestation) {
-        toast({ 
-          title: "Attestation created", 
-          description: `Attestation ID: ${data.attestation.attestationId}`,
-          action: <ToastAction altText="Copy ID" onClick={() => navigator.clipboard.writeText(data.attestation.attestationId)}>Copy ID</ToastAction>,
-        });
+      if (data.body) {
+        const parsedBody = JSON.parse(data.body);
+        setAttestationResult(parsedBody);
+        if (parsedBody.success && parsedBody.attestation) {
+          toast({ 
+            title: "Attestation created", 
+            description: `Attestation ID: ${parsedBody.attestation.attestationId}`,
+            action: <ToastAction altText="Copy ID" onClick={() => navigator.clipboard.writeText(parsedBody.attestation.attestationId)}>Copy ID</ToastAction>,
+          });
+        } else {
+          throw new Error(parsedBody.error || 'Failed to create attestation');
+        }
       } else {
-        throw new Error(data.error || 'Failed to create attestation');
+        throw new Error('Invalid response format');
       }
     } catch (err) {
       console.error('Error creating attestation:', err);

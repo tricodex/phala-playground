@@ -57,6 +57,17 @@ const getWalletClient = (provider: any) => {
   });
 };
 
+// export function JobActions({ selectedJob, onJobUpdated, onVerificationResult, onAttestationResult }: JobActionsProps) {
+//   const [content, setContent] = useState('');
+  // const [isLoading, setIsLoading] = useState({
+  //   acceptJob: false,
+  //   submitContent: false,
+  //   verifyContent: false,
+  //   createAttestation: false,
+  // });
+//   const { toast } = useToast();
+//   const { primaryWallet } = useDynamicContext();
+
 export function JobActions({ selectedJob, onJobUpdated, onVerificationResult, onAttestationResult }: JobActionsProps) {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState({
@@ -98,23 +109,81 @@ export function JobActions({ selectedJob, onJobUpdated, onVerificationResult, on
       toast({ title: "Error", description: "Please connect your wallet.", variant: "destructive" });
       return;
     }
-    setIsLoading(prev => ({ ...prev, submitContent: true }));
+    setIsLoading(prev => ({ ...prev, acceptJob: true }));
     try {
       const provider = (window as any).ethereum;
       if (!provider) {
         throw new Error('Ethereum provider (MetaMask) not found');
       }
       const walletClient = getWalletClient(provider);
+      
+      // Submit work to the blockchain
       const txHash = await submitWork(walletClient, selectedJob.id, content);
       console.log('Work submitted:', txHash);
-      onJobUpdated({ ...selectedJob, status: 'submitted', content, isFulfilled: true });
-      toast({ title: "Success", description: "Your content has been successfully submitted." });
+
+      // Immediately verify the content
+      const verificationResponse = await fetch('/api/phala-ai-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verifyContent',
+          data: { requestId: selectedJob.id, content }
+        }),
+      });
+
+      if (!verificationResponse.ok) {
+        throw new Error('Failed to verify content');
+      }
+
+      const verificationResult: VerificationResult = await verificationResponse.json();
+      onVerificationResult(verificationResult);
+
+      if (verificationResult.isValid) {
+        // If content is valid, create attestation
+        const attestationResponse = await fetch('/api/phala-viem-sign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            jobCid: selectedJob.id, 
+            status: 'completed',
+            content
+          }),
+        });
+
+        if (!attestationResponse.ok) {
+          throw new Error('Failed to create attestation');
+        }
+
+        const attestationResult: AttestationResult = await attestationResponse.json();
+        onAttestationResult(attestationResult);
+
+        if (attestationResult.success && attestationResult.attestation) {
+          // If attestation is successful, approve the work on the blockchain
+          await approveWork(walletClient, selectedJob.id);
+          
+          onJobUpdated({ ...selectedJob, status: 'completed', content, isFulfilled: true, isApproved: true });
+          toast({ 
+            title: "Success", 
+            description: "Your content has been verified, attested, and approved. Payment has been released.",
+          });
+        } else {
+          throw new Error('Attestation failed');
+        }
+      } else {
+        onJobUpdated({ ...selectedJob, status: 'submitted', content, isFulfilled: true });
+        toast({ 
+          title: "Content submitted", 
+          description: "Your content has been submitted but did not pass verification.",
+          variant: "destructive"
+        });
+      }
+
       setContent('');
     } catch (err) {
-      console.error('Error submitting content:', err);
-      toast({ title: "Error", description: "Failed to submit content. Please try again.", variant: "destructive" });
+      console.error('Error in content submission process:', err);
+      toast({ title: "Error", description: "Failed to process content. Please try again.", variant: "destructive" });
     } finally {
-      setIsLoading(prev => ({ ...prev, submitContent: false }));
+      setIsLoading(prev => ({ ...prev, acceptJob: false }));
     }
   };
 
@@ -126,9 +195,10 @@ export function JobActions({ selectedJob, onJobUpdated, onVerificationResult, on
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'verifyContent',
-          data: { requestId: selectedJob.id }
+          data: { requestId: selectedJob.id || selectedJob.transactionHash }
         }),
       });
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to verify content');

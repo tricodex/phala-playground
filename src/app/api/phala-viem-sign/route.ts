@@ -14,10 +14,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Parsed request payload:', body);
 
-    const { jobCid, status } = body;
+    const { jobCid, status, content } = body;
 
-    if (!jobCid || !status) {
-      return NextResponse.json({ error: 'Missing jobCid or status' }, { status: 400 });
+    if (!jobCid || !status || !content) {
+      return NextResponse.json({ error: 'Missing jobCid, status, or content' }, { status: 400 });
     }
 
     const url = new URL(`${PHALA_GATEWAY_URL}/ipfs/${VIEM_AGENT_CID}`);
@@ -27,8 +27,9 @@ export async function POST(request: NextRequest) {
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobCid, status }),
+      body: JSON.stringify({ jobCid, status, content }),
     });
+
 
     console.log('Phala API response status:', response.status);
     console.log('Phala API response headers:', Object.fromEntries(response.headers));

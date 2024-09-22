@@ -199,38 +199,39 @@ export default function ServiceMarketplace() {
         jobPromises.push(getJobDetails(i));
       }
       const jobDetails = await Promise.all(jobPromises);
-      const formattedJobs: Job[] = jobDetails.map((job, index) => {
-        if (typeof job !== 'object' || job === null) {
-          throw new Error('Invalid job data');
-        }
-        const typedJob = job as {
-          requestDescription: string;
-          isApproved: boolean;
-          isFulfilled: boolean;
-          worker: string;
-          amount: bigint;
-          workerSubmissionCID: string;
-          requester: string;
-        };
-        return {
-          id: (BigInt(index) + BigInt(1)).toString(),
-          requirements: typedJob.requestDescription,
-          status: typedJob.isApproved ? 'completed' : 
-                  typedJob.isFulfilled ? 'submitted' : 
-                  typedJob.worker !== '0x0000000000000000000000000000000000000000' ? 'accepted' : 'open',
-          escrowAmount: typedJob.amount,
-          content: typedJob.workerSubmissionCID,
-          requester: typedJob.requester,
-          worker: typedJob.worker,
-          isFulfilled: typedJob.isFulfilled,
-          isApproved: typedJob.isApproved,
-        };
-      });
-      setJobs(formattedJobs);
-    } catch (error) {
-      console.error('Error fetching jobs:', error);
-    }
+const formattedJobs: Job[] = jobDetails.map((job, index) => {
+  if (typeof job !== 'object' || job === null) {
+    throw new Error('Invalid job data');
+  }
+  const typedJob = job as {
+    requestDescription: string;
+    isApproved: boolean;
+    isFulfilled: boolean;
+    worker: string;
+    amount: bigint;
+    workerSubmissionCID: string;
+    requester: string;
+    transactionHash: string;
   };
+  return {
+    id: (BigInt(index) + BigInt(1)).toString(),
+    requirements: typedJob.requestDescription,
+    status: typedJob.isApproved ? 'completed' : 
+            typedJob.isFulfilled ? 'submitted' : 
+            typedJob.worker !== '0x0000000000000000000000000000000000000000' ? 'accepted' : 'open',
+    escrowAmount: typedJob.amount,
+    content: typedJob.workerSubmissionCID,
+    requester: typedJob.requester,
+    worker: typedJob.worker,
+    isFulfilled: typedJob.isFulfilled,
+    isApproved: typedJob.isApproved,
+    transactionHash: typedJob.transactionHash // Ensure this property is included
+  };
+});
+setJobs(formattedJobs);
+} catch (error) {
+  console.error('Error fetching jobs:', error);
+}}
 
   const handleJobCreated = (newJob: Job) => {
     setJobs(prev => [...prev, newJob]);

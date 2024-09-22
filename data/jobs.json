@@ -1,107 +1,113 @@
 [
   {
     "requirements": "I want a job in english",
-    "escrowAmount": 0.0001,
+    "escrowAmount": "0.0001",
     "id": "1726926867027",
     "status": "validated",
     "content": "This text is fully in english"
   },
   {
     "requirements": "I want a text fully in english",
-    "escrowAmount": 0.001,
+    "escrowAmount": "0.001",
     "id": "1726927586907",
     "status": "submitted",
     "content": "This is fully in english"
   },
   {
     "requirements": "I want a text fully in english",
-    "escrowAmount": 0.01,
+    "escrowAmount": "0.01",
     "id": "1726927641962",
     "status": "submitted",
     "content": "this is a text fully in english"
   },
   {
     "requirements": "I want a text fully in english",
-    "escrowAmount": 0.1,
+    "escrowAmount": "0.1",
     "id": "1726927678921",
     "status": "validated",
     "content": "this is a text fully in english"
   },
   {
     "requirements": "I want a text only written in english",
-    "escrowAmount": 0.1,
+    "escrowAmount": "0.1",
     "id": "1726928069865",
     "status": "submitted",
     "content": "this is fully in english"
   },
   {
     "requirements": "I want a text only in english",
-    "escrowAmount": 0.1,
+    "escrowAmount": "0.1",
     "id": "1726928827177",
     "status": "submitted",
     "content": "this is a text only in english"
   },
   {
     "requirements": "I want a text fully in english",
-    "escrowAmount": 0.001,
+    "escrowAmount": "0.001",
     "id": "1726929484944",
     "status": "submitted",
     "content": "give me the full job in english"
   },
   {
     "requirements": "I want you to write: \"this is me\"",
-    "escrowAmount": 0.00001,
+    "escrowAmount": "0.00001",
     "id": "1726929553155",
     "status": "validated",
     "content": "this is me"
   },
   {
     "requirements": "I want you to say hello",
-    "escrowAmount": 0.0001,
+    "escrowAmount": "0.0001",
     "id": "1726931468098",
     "status": "validated",
     "content": "hello"
   },
   {
     "requirements": "I want you to say hello",
-    "escrowAmount": 0.1,
+    "escrowAmount": "0.1",
     "id": "1726932198189",
     "status": "validated",
     "content": "hello"
   },
   {
     "requirements": "I want you to say hello",
-    "escrowAmount": 0.0001,
+    "escrowAmount": "0.0001",
     "id": "1726933033635",
     "status": "validated",
     "content": "hello"
   },
   {
     "requirements": "I want you to say just hello",
-    "escrowAmount": 0.001,
+    "escrowAmount": "0.001",
     "id": "1726935101501",
     "status": "validated",
     "content": "hello"
   },
   {
     "requirements": "say hello",
-    "escrowAmount": 0.001,
+    "escrowAmount": "0.001",
     "id": "1726935422931",
     "status": "validated",
     "content": "hello"
   },
   {
     "requirements": "I want you to say hello",
-    "escrowAmount": 0.01,
+    "escrowAmount": "0.01",
     "id": "1726937045387",
     "status": "validated",
     "content": "hello"
   },
   {
     "requirements": "i want a poem",
-    "escrowAmount": 0.001,
+    "escrowAmount": "0.001",
     "id": "1726944070051",
     "status": "submitted",
     "content": "roses are red an violets are blue"
+  },
+  {
+    "requirements": "Write a 500-word SEO-optimized blog post about the benefits of decentralized finance (DeFi) for small businesses.",
+    "escrowAmount": "0",
+    "id": "1726969903279",
+    "status": "accepted"
   }
 ]

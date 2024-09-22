@@ -12,6 +12,8 @@ import { createJob, fetchXdaiPrice } from '@/utils/blockchain';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import type { Job } from '@/types';
 import { createWalletClient, custom } from 'viem';
+import { saveJob } from '@/lib/job-utils';
+
 
 interface CreateRequestProps {
   onRequestCreated: (newJob: Job) => void;
@@ -64,7 +66,7 @@ export function CreateRequest({ onRequestCreated }: CreateRequestProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { primaryWallet } = useDynamicContext();
-  console.log('primaryWallet:', primaryWallet);
+  // console.log('primaryWallet:', primaryWallet);
 
   useEffect(() => {
     if (primaryWallet && !primaryWallet.connector) {
@@ -112,20 +114,24 @@ export function CreateRequest({ onRequestCreated }: CreateRequestProps) {
       const walletClient = getWalletClient(provider);
       const escrowAmountWei = BigInt(Math.floor(parseFloat(escrowAmount) * 1e18));
 
-      console.log('Calling createJob with:', { requirements, escrowAmountWei });
       const txHash = await createJob(walletClient, requirements, escrowAmountWei);
-      console.log('Job created:', txHash);
+    console.log('Job created:', txHash);
 
-      onRequestCreated({
-        id: txHash, 
-        requirements,
-        escrowAmount: escrowAmountWei,
-        requester: primaryWallet.address,
-        worker: '',
-        isFulfilled: false,
-        isApproved: false,
-        status: 'open',
-      });
+    const newJob: Job = {
+      id: txHash,
+      requirements,
+      status: 'open',
+      escrowAmount: escrowAmountWei,
+      requester: primaryWallet.address,
+      worker: '',
+      isFulfilled: false,
+      isApproved: false,
+      content: '',
+      transactionHash: txHash,
+    };
+
+    saveJob(newJob);
+    onRequestCreated(newJob);
 
       toast({ 
         title: "Request created", 

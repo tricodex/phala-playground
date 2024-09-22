@@ -1,27 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveJobs, getJobs } from '@/lib/job-utils';
-import { Job } from '@/types';
+import { updateJob } from '@/lib/job-utils';  // Ensure this utility is correctly importing
+import { Job } from '@/types';  // Adjust based on your Job type definition
+import { ethers } from 'ethers';  // Ethers.js to decode ABI
 
+// Constants for Phala Gateway and OpenAI integration
 const PHALA_GATEWAY_URL = 'https://wapo-testnet.phala.network';
 const OPENAI_AGENT_CID = 'QmbbGCwhQuij7e2mxC8DNKNEvxuJYz9u5r8DkSug6C1Lgj';
-const SECRET_KEY = process.env.PHALA_OPENAI_SECRET_KEY || '';
+const SECRET_KEY = process.env.PHALA_OPENAI_SECRET_KEY || '';  // Make sure this environment variable is set
 
+// Fetch xDai price, could potentially be from an API or set as a constant if fixed
 const fetchXdaiPrice = async (): Promise<number> => 1.01;
 
+// POST handler to route between actions: `verifyContent` and `createRequest`
 export async function POST(request: NextRequest) {
   try {
     console.log('Received POST request to phala-ai-agent');
-    const body = await request.json();
+    const body = await request.json();  // Parse the request body
     console.log('Request body:', JSON.stringify(body, null, 2));
     const { action, data } = body;
 
     switch (action) {
-      case 'createRequest':
-        return handleCreateRequest(data);
       case 'verifyContent':
-        return handleVerifyContent(data);
+        return await handleVerifyContent(data);
+      case 'createRequest':
+        return await handleCreateRequest(data);
       default:
-        console.error('Invalid action:', action);
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
@@ -30,16 +33,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Handle job creation by validating escrow amount and creating a new job
 async function handleCreateRequest(data: { requirements: string, escrowAmount: string, requester: string }): Promise<NextResponse> {
   try {
-    console.log('Handling create request:', data);
-
     const { requirements, escrowAmount = '1', requester } = data;
+
     if (!requester) {
       return NextResponse.json({ error: 'Missing requester address' }, { status: 400 });
     }
-
-    const jobs = await getJobs();
 
     const xdaiPrice = await fetchXdaiPrice();
     const MINIMUM_ESCROW_AMOUNT_USD = 1;
@@ -50,8 +51,9 @@ async function handleCreateRequest(data: { requirements: string, escrowAmount: s
       return NextResponse.json({ error: `Minimum escrow amount is ${MINIMUM_ESCROW_AMOUNT_XDAI} xDAI` }, { status: 400 });
     }
 
+    // Create a new Job object
     const newJob: Job = {
-      id: `0x${Date.now().toString(16)}`, // Generate a hex string ID
+      id: `0x${Date.now().toString(16)}`,  // Unique job ID based on current time
       requirements,
       status: 'open',
       escrowAmount: BigInt(Math.floor(escrowAmountNumber * 1e18)),
@@ -60,17 +62,14 @@ async function handleCreateRequest(data: { requirements: string, escrowAmount: s
       isFulfilled: false,
       isApproved: false,
       content: '',
-      transactionHash: `0x${Date.now().toString(16)}`, // Add this line to generate a mock transaction hash
     };
 
-    jobs.push(newJob);
-    await saveJobs(jobs);
-    return NextResponse.json({ 
-      success: true, 
-      job: { 
-        ...newJob, 
-        escrowAmount: escrowAmount // Return the original string value for user display purposes
-      } 
+    return NextResponse.json({
+      success: true,
+      job: {
+        ...newJob,
+        escrowAmount,  // Return escrowAmount as a string for display purposes
+      },
     });
   } catch (error) {
     console.error('Error in handleCreateRequest:', error);
@@ -78,24 +77,67 @@ async function handleCreateRequest(data: { requirements: string, escrowAmount: s
   }
 }
 
-async function handleVerifyContent(data: { requestId: string }) {
+// Function to decode transaction input using ethers.js
+function decodeInput(input: string) {
+  // ABI definition for the method `createJob(string _requestDescription, uint256 _value)`
+  const abi = [
+    "function createJob(string _requestDescription, uint256 _value)"
+  ];
+
+  // Create an Interface instance with the ABI
+  const iface = new ethers.Interface(abi);
+
+  // Decode the input data
+  const decoded = iface.decodeFunctionData("createJob", input);
+
+  // Return the decoded result (which contains `_requestDescription` and `_value`)
+  return {
+    requestDescription: decoded._requestDescription,
+    value: decoded._value.toString(),
+  };
+}
+
+// Handle content verification using transaction details from Blockscout API
+async function handleVerifyContent(data: { requestId: string, content: string }): Promise<NextResponse> {
   try {
     console.log('Verifying content with data:', JSON.stringify(data, null, 2));
-    const { requestId } = data;
+    const { requestId, content } = data;
+
+    // Fetch transaction details from Blockscout API
+    const response = await fetch(`https://gnosis-chiado.blockscout.com/api?module=transaction&action=gettxinfo&txhash=${requestId}`);
     
-    const jobs = await getJobs();
-    console.log('All jobs:', jobs.map(job => ({ id: job.id, txHash: job.transactionHash }))); // Log all job IDs and transaction hashes for debugging
-    const job = jobs.find(j => j.id.toLowerCase() === requestId.toLowerCase() || j.transactionHash?.toLowerCase() === requestId.toLowerCase());
-    
-    if (!job) {
-      console.error(`Job not found for requestId: ${requestId}`);
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+    if (!response.ok) {
+      return NextResponse.json({ error: 'Failed to fetch transaction details' }, { status: response.status });
     }
 
-    const content = job.content || '';
+    const transaction = await response.json();
+    console.log('Transaction details:', JSON.stringify(transaction, null, 2));
 
+    if (!transaction || !transaction.result) {
+      return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
+    }
+
+    // Decode the input field to extract the _requestDescription
+    const decodedInput = decodeInput(transaction.result.input);
+    const { requestDescription, value } = decodedInput;
+    console.log(`Decoded requestDescription: ${requestDescription}, value: ${value}`);
+
+    // Build the job data object with required properties
+    const jobData: Job = { 
+      id: transaction.result.hash,
+      requirements: requestDescription,  // Use decoded requestDescription as requirements
+      escrowAmount: BigInt(value),  // Convert to BigInt
+      requester: transaction.result.from,
+      content,
+      status: 'submitted',  // Initial status for submitted jobs
+      worker: '',  // Empty worker as a placeholder
+      isFulfilled: false,  // Job is not fulfilled yet
+      isApproved: false,  // Approval status is false by default
+    };
+
+    // Validate the content with Phala AI gateway
     const queryParams = new URLSearchParams({
-      requirements: job.requirements,
+      requirements: jobData.requirements,
       content,
       key: SECRET_KEY,
     });
@@ -107,16 +149,16 @@ async function handleVerifyContent(data: { requestId: string }) {
 
     if (!phalaResponse.ok) {
       const errorText = await phalaResponse.text();
-      console.error('Phala API error:', phalaResponse.status, errorText);
-      throw new Error(`Phala API error: ${phalaResponse.status} ${phalaResponse.statusText}`);
+      throw new Error(`Phala API error: ${phalaResponse.status} ${phalaResponse.statusText}, details: ${errorText}`);
     }
 
     const verificationResult = await phalaResponse.json();
-    
-    job.status = verificationResult.isValid ? 'validated' : 'submitted';
-    await saveJobs(jobs);
 
-    console.log('Verification result saved for request ID:', requestId);
+    // Update job status based on verification result
+    jobData.status = verificationResult.isValid ? 'validated' : 'submitted';
+    jobData.content = content;  // Store the content in the job
+    updateJob(jobData);  // Assuming `updateJob` persists the job in a database
+
     return NextResponse.json(verificationResult);
   } catch (error) {
     console.error('Error in handleVerifyContent:', error);

@@ -6,6 +6,8 @@ const PHALA_GATEWAY_URL = 'https://wapo-testnet.phala.network';
 const OPENAI_AGENT_CID = 'QmbbGCwhQuij7e2mxC8DNKNEvxuJYz9u5r8DkSug6C1Lgj';
 const SECRET_KEY = process.env.PHALA_OPENAI_SECRET_KEY || '';
 
+const fetchXdaiPrice = async (): Promise<number> => 1.01;
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Received POST request to phala-ai-agent');
@@ -28,17 +30,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function fetchXdaiPrice(): Promise<number> {
-  // Hardcoded xDAI price based 22/9/24 huehueu
-  const hardcodedXdaiPrice = 1.01;
-  return hardcodedXdaiPrice;
-}
-
-async function handleCreateRequest(data: { requirements: string, escrowAmount: string }): Promise<NextResponse> {
+async function handleCreateRequest(data: { requirements: string, escrowAmount: string, requester: string }): Promise<NextResponse> {
   try {
     console.log('Handling create request:', data);
 
-    const { requirements, escrowAmount = '1' } = data;
+    const { requirements, escrowAmount = '1', requester } = data;
+    if (!requester) {
+      return NextResponse.json({ error: 'Missing requester address' }, { status: 400 });
+    }
+
     const jobs = await getJobs();
 
     const xdaiPrice = await fetchXdaiPrice();
@@ -51,14 +51,16 @@ async function handleCreateRequest(data: { requirements: string, escrowAmount: s
     }
 
     const newJob: Job = {
-      id: Date.now().toString(),
+      id: `0x${Date.now().toString(16)}`, // Generate a hex string ID
       requirements,
       status: 'open',
       escrowAmount: BigInt(Math.floor(escrowAmountNumber * 1e18)),
-      requester: '', // Set this to the requester's address if available
+      requester,
       worker: '',
       isFulfilled: false,
       isApproved: false,
+      content: '',
+      transactionHash: `0x${Date.now().toString(16)}`, // Add this line to generate a mock transaction hash
     };
 
     jobs.push(newJob);
@@ -67,7 +69,7 @@ async function handleCreateRequest(data: { requirements: string, escrowAmount: s
       success: true, 
       job: { 
         ...newJob, 
-        escrowAmount: escrowAmount // Return the original string value
+        escrowAmount: escrowAmount // Return the original string value for user display purposes
       } 
     });
   } catch (error) {
@@ -82,19 +84,19 @@ async function handleVerifyContent(data: { requestId: string }) {
     const { requestId } = data;
     
     const jobs = await getJobs();
-    const job = jobs.find(j => j.id === requestId);
+    console.log('All jobs:', jobs.map(job => ({ id: job.id, txHash: job.transactionHash }))); // Log all job IDs and transaction hashes for debugging
+    const job = jobs.find(j => j.id.toLowerCase() === requestId.toLowerCase() || j.transactionHash?.toLowerCase() === requestId.toLowerCase());
     
     if (!job) {
       console.error(`Job not found for requestId: ${requestId}`);
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
-    const requirements = job.requirements;
     const content = job.content || '';
 
     const queryParams = new URLSearchParams({
-      requirements: requirements,
-      content: content,
+      requirements: job.requirements,
+      content,
       key: SECRET_KEY,
     });
 

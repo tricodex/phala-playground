@@ -94,30 +94,28 @@ export const createJob = async (provider: any, description: string, value: bigin
   }
 };
 
-export const submitWork = async (provider: any, jobId: bigint, submissionCID: string) => {
-  const walletClient = getWalletClient(provider);
+export const submitWork = async (walletClient: any, jobId: string, submissionCID: string) => {
   const [address] = await walletClient.getAddresses();
 
   const { request } = await publicClient.simulateContract({
     address: contractAddress,
     abi: contractAbi,
     functionName: 'submitWork',
-    args: [jobId, submissionCID],
+    args: [BigInt(jobId), submissionCID],
     account: address,
   });
 
   return walletClient.writeContract(request);
 };
 
-export const approveWork = async (provider: any, jobId: bigint) => {
-  const walletClient = getWalletClient(provider);
+export const approveWork = async (walletClient: any, jobId: string) => {
   const [address] = await walletClient.getAddresses();
 
   const { request } = await publicClient.simulateContract({
     address: contractAddress,
     abi: contractAbi,
     functionName: 'approveWork',
-    args: [jobId],
+    args: [BigInt(jobId)],
     account: address,
   });
 

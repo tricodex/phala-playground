@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Job, VerificationResult, AttestationResult } from "@/types";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { submitWork, approveWork } from '@/utils/blockchain';
+import { createWalletClient, custom } from 'viem';
 
 interface JobActionsProps {
   selectedJob: Job;
@@ -14,6 +16,46 @@ interface JobActionsProps {
   onVerificationResult: (result: VerificationResult) => void;
   onAttestationResult: (result: AttestationResult) => void;
 }
+
+interface Chain {
+  id: number;
+  name: string;
+  network: string;
+  rpcUrls: {
+    default: {
+      http: string[];
+    };
+  };
+  nativeCurrency: {
+    name: string;
+    symbol: string;
+    decimals: number;
+  };
+}
+
+const chiadoTestnet: Chain = {
+  id: 10200,
+  name: 'Chiado Testnet',
+  network: 'chiado',
+  rpcUrls: {
+    default: { http: ['https://rpc.chiadochain.net'] },
+  },
+  nativeCurrency: {
+    name: 'Gnosis',
+    symbol: 'xDAI',
+    decimals: 18,
+  },
+};
+
+const getWalletClient = (provider: any) => {
+  if (!provider) {
+    throw new Error('Provider is undefined');
+  }
+  return createWalletClient({
+    chain: chiadoTestnet,
+    transport: custom(provider),
+  });
+};
 
 export function JobActions({ selectedJob, onJobUpdated, onVerificationResult, onAttestationResult }: JobActionsProps) {
   const [content, setContent] = useState('');
@@ -26,14 +68,13 @@ export function JobActions({ selectedJob, onJobUpdated, onVerificationResult, on
   const { toast } = useToast();
   const { primaryWallet } = useDynamicContext();
 
-
-useEffect(() => {
-  if (!primaryWallet) {
-    console.error("No wallet connected");
-  } else {
-    console.log("Wallet connected:", primaryWallet);
-  }
-}, [primaryWallet]);
+  useEffect(() => {
+    if (!primaryWallet) {
+      console.error("No wallet connected");
+    } else {
+      console.log("Wallet connected:", primaryWallet);
+    }
+  }, [primaryWallet]);
 
   const handleAcceptJob = async () => {
     setIsLoading(prev => ({ ...prev, acceptJob: true }));
@@ -59,7 +100,12 @@ useEffect(() => {
     }
     setIsLoading(prev => ({ ...prev, submitContent: true }));
     try {
-      const txHash = await submitWork(primaryWallet.connector, BigInt(selectedJob.id), content);
+      const provider = (window as any).ethereum;
+      if (!provider) {
+        throw new Error('Ethereum provider (MetaMask) not found');
+      }
+      const walletClient = getWalletClient(provider);
+      const txHash = await submitWork(walletClient, selectedJob.id, content);
       console.log('Work submitted:', txHash);
       onJobUpdated({ ...selectedJob, status: 'submitted', content, isFulfilled: true });
       toast({ title: "Success", description: "Your content has been successfully submitted." });
@@ -89,11 +135,11 @@ useEffect(() => {
       }
       const data: VerificationResult = await response.json();
       onVerificationResult(data);
-      
+
       if (data.isValid) {
         await handleCreateAttestation();
       }
-      
+
       toast({ 
         title: "Content verified", 
         description: data.isValid ? "The content meets all requirements." : "The content does not meet the requirements.",
@@ -149,7 +195,12 @@ useEffect(() => {
       return;
     }
     try {
-      const txHash = await approveWork(primaryWallet.connector, BigInt(selectedJob.id));
+      const provider = (window as any).ethereum;
+      if (!provider) {
+        throw new Error('Ethereum provider (MetaMask) not found');
+      }
+      const walletClient = getWalletClient(provider);
+      const txHash = await approveWork(walletClient, selectedJob.id);
       console.log('Work approved:', txHash);
       onJobUpdated({ ...selectedJob, status: 'completed', isApproved: true });
     } catch (err) {

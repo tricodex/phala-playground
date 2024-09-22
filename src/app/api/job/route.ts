@@ -14,6 +14,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     ...jobData,
     id: Date.now().toString(),
     status: 'open',
+    transactionHash: jobData.transactionHash, // Add this line
   };
   jobs.push(newJob);
   await saveJobs(jobs);
@@ -21,11 +22,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function PUT(request: NextRequest): Promise<NextResponse> {
-  const { id, status, content }: Partial<Job> = await request.json();
+  const { id, status, content, transactionHash }: Partial<Job> = await request.json();
   const jobs = await getJobs();
-  const jobIndex = jobs.findIndex(job => job.id === id);
+  const jobIndex = jobs.findIndex(job => job.id === id || job.transactionHash === id);
   if (jobIndex !== -1) {
-    jobs[jobIndex] = { ...jobs[jobIndex], status: status || 'open', content };
+    jobs[jobIndex] = { 
+      ...jobs[jobIndex], 
+      status: status || jobs[jobIndex].status, 
+      content: content !== undefined ? content : jobs[jobIndex].content,
+      transactionHash: transactionHash || jobs[jobIndex].transactionHash
+    };
     await saveJobs(jobs);
     return NextResponse.json({ job: jobs[jobIndex] });
   }

@@ -11,6 +11,7 @@ export interface Job {
   worker: string;
   isFulfilled: boolean;
   isApproved: boolean;
+  transactionHash?: string; // Add this line
 }
   
   export interface VerificationResult {
